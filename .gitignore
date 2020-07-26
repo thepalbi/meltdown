@@ -5,6 +5,7 @@ physical_reader
 reliability
 secret
 test
+flush_reload_stats
 *.a
 *.o
 *.so

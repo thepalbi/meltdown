@@ -115,6 +115,8 @@ size_t libkdump_phys_to_virt(size_t addr);
 void libkdump_enable_debug(int enable);
 
 
+void flush_reload_debug_pass(char *probe, char *cached_line);
+
 
 #endif
 
