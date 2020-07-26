@@ -19,12 +19,23 @@ const char *strings[] = {
     "How did you get here?"};
 
 #define PAGE_SIZE 4096
+#define SAMPLES 10
 
-
-const char *string = "uggis";
-
+char string[] = "uggis";
 
 int main(int argc, char *argv[]) {
+
+  // Extract index to cache
+  if (argc == 2) {
+    int index_to_cache = atoi(argv[1]);
+    if (index_to_cache > 255) {
+      printf("%s [%s]", argv[0], "NOT REQUIRED: Index to cache in 0 <= index <= 255\n");
+      exit(1);
+    }
+    char char_to_write = (char)(index_to_cache);
+    *string = char_to_write;
+  }
+
   char *_probe = NULL, *probe = NULL;
   _probe = malloc(PAGE_SIZE * 300);
   if (!_probe) {
@@ -35,11 +46,15 @@ int main(int argc, char *argv[]) {
   // This mask the lower 3 bits, and then adds 2 * PAGE_SIZE
   probe = (char *)(((size_t)_probe & ~0xfff) + 0x1000 * 2);
 
+  // address to the first character of the string
   char *value_to_cache = string;
 
-  printf("Writing to %d index\n", *value_to_cache);
 
-  for (size_t i = 0; i < 10; i++) {
+  #ifdef DEBUG
+    printf("Writing to %d index\n", *value_to_cache);
+  #endif
+
+  for (size_t i = 0; i < SAMPLES; i++) {
     flush_reload_debug_pass(probe, value_to_cache);
   }
 }

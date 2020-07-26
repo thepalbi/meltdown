@@ -1,4 +1,4 @@
-override CFLAGS += -O3 -pthread -Wno-attributes -m64
+override CFLAGS += -O0 -g -pthread -Wno-attributes -m64
 CC=gcc
 
 #BINARIES=test kaslr physical_reader
